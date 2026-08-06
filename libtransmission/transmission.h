@@ -256,6 +256,25 @@ void tr_sessionClose(tr_session* session, size_t timeout_secs = 15);
 char const* tr_sessionGetConfigDir(tr_session const* session);
 
 /**
+ * @brief Return whether another session holds the lock on this session's config dir.
+ *
+ * False means either this session acquired the lock or locking was unavailable.
+ * It does not prove that this session has exclusive ownership of the directory.
+ */
+[[nodiscard]] bool tr_sessionConfigDirIsContended(tr_session const* session);
+
+/**
+ * @brief Return whether another process holds the lock on `config_dir` right now.
+ *
+ * Asks without starting a session, for a caller deciding whether to start one at all.
+ * The answer describes the instant it was taken: a caller that goes on to start a
+ * session still learns the outcome that counts from `tr_sessionConfigDirIsContended()`.
+ */
+#ifdef __cplusplus
+[[nodiscard]] bool tr_configDirIsContended(std::string_view config_dir);
+#endif
+
+/**
  * @brief Get the default download folder for new torrents.
  *
  * This is set by `tr_sessionInit()` or `tr_sessionSetDownloadDir()`,

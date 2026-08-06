@@ -44,6 +44,7 @@
 #include "libtransmission/bandwidth.h"
 #include "libtransmission/blocklist.h"
 #include "libtransmission/cache.h"
+#include "libtransmission/config-dir-lock.h"
 #include "libtransmission/interned-string.h"
 #include "libtransmission/ip-cache.h"
 #include "libtransmission/log.h" // for tr_log_level
@@ -622,6 +623,25 @@ public:
     [[nodiscard]] constexpr std::string const& configDir() const noexcept
     {
         return config_dir_;
+    }
+
+    [[nodiscard]] constexpr tr_config_dir_lock::Status configDirLockStatus() const noexcept
+    {
+        return config_dir_lock_.status();
+    }
+
+    [[nodiscard]] constexpr bool configDirIsContended() const noexcept
+    {
+        return configDirLockStatus() == tr_config_dir_lock::Status::Contended;
+    }
+
+    // Whether this session's state may be saved to the config dir.
+    // False when another session holds the dir: every file saved there would clobber the owner's.
+    // An unavailable lock does not forfeit saving --
+    // it names no owner to clobber, and persisting is still this session's job.
+    [[nodiscard]] constexpr bool mayWriteConfigDir() const noexcept
+    {
+        return !configDirIsContended();
     }
 
     [[nodiscard]] constexpr auto const& torrentDir() const noexcept
@@ -1319,6 +1339,10 @@ private:
     /// const fields
 
     std::string const config_dir_;
+
+    // Held for the session's lifetime.
+    tr_config_dir_lock const config_dir_lock_;
+
     std::string const resume_dir_;
     std::string const torrent_dir_;
     std::string const blocklist_dir_;
@@ -1372,7 +1396,7 @@ private:
 
     mutable std::recursive_mutex session_mutex_;
 
-    tr_stats session_stats_{ config_dir_, time(nullptr) };
+    tr_stats session_stats_{ config_dir_, time(nullptr), mayWriteConfigDir() };
 
     tr_announce_list default_trackers_;
 

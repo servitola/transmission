@@ -1076,6 +1076,11 @@ bool tr_sys_file_lock(tr_sys_file_t handle, int operation, tr_error* error)
     return ret;
 }
 
+bool tr_sys_file_lock_error_is_contended(tr_error const& error) noexcept
+{
+    return error.code() == ERROR_LOCK_VIOLATION;
+}
+
 std::string tr_sys_dir_get_current(tr_error* error)
 {
     if (auto const size = GetCurrentDirectoryW(0, nullptr); size != 0)

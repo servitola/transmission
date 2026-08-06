@@ -1725,7 +1725,8 @@ void tr_torrent::VerifyMediator::on_verify_done(bool const aborted)
 
 void tr_torrent::save_resume_file()
 {
-    if (!is_dirty())
+    // Resume files belong to the session that holds the config dir.
+    if (!is_dirty() || !session->mayWriteConfigDir())
     {
         return;
     }
