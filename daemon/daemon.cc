@@ -12,6 +12,7 @@
 #include <iterator> /* std::back_inserter */
 #include <memory>
 #include <string_view>
+#include <thread>
 #include <vector>
 
 #ifdef HAVE_SYSLOG
@@ -859,11 +860,52 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
     }
 
     /* start the session */
-    auto const* const cdir = this->config_dir_.c_str();
+
+    // A daemon replacing one that is still shutting down finds the dir held: the outgoing
+    // process keeps its lock until its close has announced to every tracker, seconds later.
+    // Waiting for that is what restarting the service means, so wait before refusing --
+    // and only ever for a process that is still there, since the kernel drops the lock when one dies.
+    // Supervision that sequences the stop ahead of the start never reaches this.
+    static auto constexpr LockPatience = std::chrono::seconds{ 15 };
+    static auto constexpr LockRetryInterval = std::chrono::seconds{ 1 };
+
+    if (auto const deadline = std::chrono::steady_clock::now() + LockPatience; tr_configDirIsContended(config_dir_))
+    {
+        // printMessage rather than the log, which is not routed anywhere this early:
+        // a start that pauses for fifteen seconds has to say why while it is happening.
+        printMessage(
+            log_stream_,
+            TR_LOG_INFO,
+            MyName,
+            fmt::format(fmt::runtime(_("Waiting for another process to release '{path}'")), fmt::arg("path", config_dir_)),
+            __FILE__,
+            __LINE__);
+
+        do
+        {
+            std::this_thread::sleep_for(LockRetryInterval);
+        } while (tr_configDirIsContended(config_dir_) && std::chrono::steady_clock::now() < deadline);
+    }
+
     auto* session = tr_sessionInit(config_dir_, true, settings_);
-    tr_sessionSetRPCCallback(session, on_rpc_callback, this);
     tr_logAddInfo(fmt::format(fmt::runtime(_("Loading settings from '{path}'")), fmt::arg("path", config_dir_)));
-    tr_sessionSaveSettings(session, cdir, settings_);
+
+    // The session's own lock is the one that decides: each probe above released the lock
+    // it took to ask, so the dir was only ever free as of the last of them.
+    if (tr_sessionConfigDirIsContended(session))
+    {
+        auto const errmsg = fmt::format(
+            fmt::runtime(_("Another process is already using '{path}'.")),
+            fmt::arg("path", config_dir_));
+        printMessage(log_stream_, TR_LOG_ERROR, MyName, errmsg, __FILE__, __LINE__);
+        tr_sessionClose(session, 1);
+        cleanup_signals(sig_ev);
+        return 1;
+    }
+
+    tr_sessionSetRPCCallback(session, on_rpc_callback, this);
+
+    tr_sessionSaveSettings(session, config_dir_.c_str(), settings_);
 
     auto const* const settings_map = settings_.get_if<tr_variant::Map>();
     if (settings_map == nullptr)
@@ -1018,7 +1060,7 @@ CLEANUP:
 
     event_base_free(ev_base_);
 
-    tr_sessionSaveSettings(my_session_, cdir, settings_);
+    tr_sessionSaveSettings(my_session_, config_dir_.c_str(), settings_);
     tr_sessionClose(my_session_);
     pumpLogMessages(log_stream_);
     printf(" done.\n");
