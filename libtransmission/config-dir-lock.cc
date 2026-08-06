@@ -13,8 +13,9 @@ using namespace std::literals;
 
 namespace
 {
-// Every client has to agree on this name: two that spell it differently each hold a
-// lock the other never looks at, and both start on one config dir.
+// Interop contract, shared with separately-built clients: two products that spell this
+// differently each hold a lock the other never looks at, and both start on one config dir.
+// `libtransmission-app/interop-names.h` inventories every such name.
 auto constexpr LockFilename = "lock"sv;
 } // namespace
 

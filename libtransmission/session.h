@@ -182,6 +182,11 @@ private:
             return session_.config_dir_;
         }
 
+        [[nodiscard]] bool may_write_config_dir() const override
+        {
+            return session_.mayWriteConfigDir();
+        }
+
         [[nodiscard]] libtransmission::TimerMaker& timer_maker() override
         {
             return session_.timerMaker();

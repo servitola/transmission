@@ -207,6 +207,38 @@ std::string native_path_to_path(std::wstring_view wide_path)
     return tr_win32_native_to_utf8(wide_path);
 }
 
+[[nodiscard]] std::wstring path_to_normalized_native_path(std::string_view const path)
+{
+    auto wide_path = path_to_fixed_native_path(path);
+
+    // path_to_fixed_native_path() squashes repeated separators, including the leading pair that makes a path UNC.
+    // Restore it: GetFullPathNameW() would otherwise resolve \\server\share against the current drive.
+    if (is_unc_path(path))
+    {
+        wide_path.insert(0, 1, L'\\');
+    }
+
+    // Past MAX_PATH, GetFullPathNameW() answers only for a path carrying the "\\?\" prefix --
+    // which is also what tells it to leave the path alone, so it cannot both reach that length and normalize.
+    // Such a path keeps the spelling it arrived with: it is already absolute, since nothing relative
+    // reaches that length, and tr_sys_path_resolve() canonicalizes from the open handle regardless.
+    auto const size = GetFullPathNameW(wide_path.c_str(), 0, nullptr, nullptr);
+    if (size == 0)
+    {
+        return path_to_native_path(path);
+    }
+
+    auto normalized = std::wstring(size, L'\0');
+    auto const length = GetFullPathNameW(wide_path.c_str(), size, std::data(normalized), nullptr);
+    if (length == 0 || length >= size)
+    {
+        return path_to_native_path(path);
+    }
+
+    normalized.resize(length);
+    return path_to_native_path(native_path_to_path(normalized));
+}
+
 tr_sys_file_t open_file(std::string_view path, DWORD access, DWORD disposition, DWORD flags, tr_error* error)
 {
     tr_sys_file_t ret = TR_BAD_SYS_FILE;
@@ -487,7 +519,7 @@ std::string tr_sys_path_resolve(std::string_view path, tr_error* error)
 {
     auto ret = std::string{};
 
-    if (auto const wide_path = path_to_native_path(path); !std::empty(wide_path))
+    if (auto const wide_path = path_to_normalized_native_path(path); !std::empty(wide_path))
     {
         if (auto const handle = CreateFileW(
                 wide_path.c_str(),

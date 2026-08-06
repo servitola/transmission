@@ -34,7 +34,7 @@ namespace
 {
 auto constexpr LineWidth = int{ 80 };
 
-char constexpr MyConfigName[] = "transmission";
+char constexpr MyConfigName[] = TR_CONFIG_DIR_NAME;
 char constexpr MyReadableName[] = "transmission-cli";
 char constexpr Usage
     [] = "A fast and easy BitTorrent client\n"

@@ -777,6 +777,10 @@ void Session::add_ctor(tr_ctor* ctor)
     bool const do_prompt = gtr_pref_flag_get(TR_KEY_show_options_window);
     core_apply_defaults(ctor);
     impl_->add_ctor(ctor, do_prompt, do_notify);
+
+    // A batch of one. Whatever add_ctor() reported -- a duplicate, most often --
+    // is shown by the end of a batch, and nothing else here marks one.
+    torrents_added();
 }
 
 /***
@@ -817,6 +821,10 @@ void Session::Impl::add_file_async_callback(
                 fmt::arg("error", e.what()),
                 fmt::arg("error_code", e.code())));
     }
+
+    // The batch this file belonged to ended when its download did:
+    // add_from_url() returns long before this runs, so its own mark came too early to cover this.
+    torrents_added();
 
     dec_busy();
 }

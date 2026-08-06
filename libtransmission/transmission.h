@@ -55,6 +55,9 @@ struct tr_torrent;
 struct tr_torrent_metainfo;
 struct tr_variant;
 
+// Interop contract, shared with separately-built clients: a third-party RPC client
+// works against any of them only while they all spell these the same way.
+// `libtransmission-app/interop-names.h` inventories every such name, here and there.
 #define TR_RPC_SESSION_ID_HEADER "X-Transmission-Session-Id"
 #define TR_RPC_RPC_VERSION_HEADER "X-Transmission-Rpc-Version"
 
@@ -118,6 +121,12 @@ enum : int8_t
 /** @brief buffer variant of `tr_getDefaultConfigDir()`. See `tr_strv_to_buf()`. */
 size_t tr_getDefaultConfigDirToBuf(char const* appname, char* buf, size_t buflen);
 
+// The appname the interactive clients pass to `tr_getDefaultConfigDir()`.
+// Interop contract, shared with separately-built clients: it is what makes a user's
+// settings and torrents survive replacing one client with another.
+// The daemon is deliberately not one of these -- it defaults to its own dir.
+#define TR_CONFIG_DIR_NAME "transmission"
+
 /**
  * @brief returns Transmission's default download directory.
  *
@@ -145,6 +154,8 @@ inline auto constexpr TrDefaultPeerLimitGlobal = 200U;
 #define TR_DEFAULT_PEER_LIMIT_TORRENT_STR "50"
 inline auto constexpr TrDefaultPeerLimitTorrent = 50U;
 
+// Interop contract, shared with separately-built clients: these three make up the RPC
+// URL a third-party client is configured with. See TR_RPC_SESSION_ID_HEADER above.
 inline auto constexpr TrHttpServerDefaultBasePath = std::string_view{ TR_DEFAULT_RPC_URL_STR };
 inline auto constexpr TrHttpServerRpcRelativePath = std::string_view{ "rpc" };
 inline auto constexpr TrHttpServerWebRelativePath = std::string_view{ "web/" };

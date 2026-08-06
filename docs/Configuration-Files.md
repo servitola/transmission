@@ -49,6 +49,12 @@ This empty file is kept locked by a running session to mark the configuration fo
 
 A session that finds the folder already locked reports it and stops.
 
+### lock.startup
+This empty file is kept locked by a launch during the brief window between looking for a client already running on this folder and becoming findable itself. It is what stops two launches started at the same moment from each concluding it was first.
+
+### dbus-peer
+This file records the D-Bus bus name, interface and object path of the running client, so that a later launch on this folder can hand it a torrent file or magnet link instead of starting a second client. Because the file names the interface to call rather than assuming one, this works between clients built from different sources. It is rewritten whenever a client starts on the folder, and is meaningless once that client exits.
+
 ### torrents/
 This subfolder holds the .torrent files that have been added to Transmission. The files in this folder are named with a combination of the torrent's name (to make it human-readable) and a portion of the torrent's SHA1 hash (to avoid filename collisions from similarly-named torrents).
 

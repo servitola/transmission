@@ -997,7 +997,10 @@ void tr_torrent::init(tr_ctor const& ctor)
     // assume the torrent is new
     bool const is_new_torrent = !tr_sys_path_exists(file_path);
 
-    if (is_new_torrent)
+    // The copy lands in the config dir, so a session that does not hold that dir leaves
+    // the torrents there to the session that does. Newness is unaffected: it describes
+    // the torrent, not what this session is allowed to write.
+    if (is_new_torrent && session->mayWriteConfigDir())
     {
         auto error = tr_error{};
 
