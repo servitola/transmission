@@ -24,8 +24,8 @@ bool tr_lock_file::try_acquire()
     auto error = tr_error{};
     if (!tr_sys_file_lock(handle, TR_SYS_FILE_LOCK_EX | TR_SYS_FILE_LOCK_NB, &error))
     {
-        // A failed attempt must close what it opened without disturbing the lock its holder owns;
-        // closing an unlocked descriptor does that.
+        // Close what this attempt opened. The descriptor holds no lock,
+        // so closing it cannot disturb the one its holder owns.
         status_ = tr_sys_file_lock_error_is_contended(error) ? Status::Contended : Status::Unavailable;
         tr_sys_file_close(handle);
         return false;

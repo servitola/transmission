@@ -19,9 +19,9 @@ namespace tr::interop
 // NOLINTNEXTLINE(readability-identifier-naming): spelled like the rest of tr::interop
 [[nodiscard]] std::unique_ptr<Transport> make_transport(QString const& config_dir);
 
-// Each concrete transport keeps its class to itself and offers only this.
-// Declared here rather than where make_transport() picks between them, so that the
-// definition and the call are checked against one declaration instead of two.
+// Each concrete transport keeps its class to itself and offers only this factory.
+// Declared here rather than beside make_transport(), so that the definition and the
+// call are checked against one declaration instead of two.
 namespace detail
 {
 #ifdef ENABLE_DBUS_INTEROP

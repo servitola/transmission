@@ -778,8 +778,8 @@ void Session::add_ctor(tr_ctor* ctor)
     core_apply_defaults(ctor);
     impl_->add_ctor(ctor, do_prompt, do_notify);
 
-    // A batch of one. Whatever add_ctor() reported -- a duplicate, most often --
-    // is shown by the end of a batch, and nothing else here marks one.
+    // A batch of one: end it here, or what add_ctor() reported --
+    // a duplicate, most often -- is never shown.
     torrents_added();
 }
 
@@ -822,8 +822,8 @@ void Session::Impl::add_file_async_callback(
                 fmt::arg("error_code", e.code())));
     }
 
-    // The batch this file belonged to ended when its download did:
-    // add_from_url() returns long before this runs, so its own mark came too early to cover this.
+    // add_from_url() returned, and ended its batch, long before this download finished.
+    // This late arrival needs a batch end of its own.
     torrents_added();
 
     dec_busy();

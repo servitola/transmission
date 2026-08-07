@@ -16,32 +16,32 @@ namespace tr::interop
 
 enum class Intent : uint8_t
 {
-    // This launch asks for something no instance already running can do for it --
+    // This launch wants something no already-running instance can give it:
     // a session on another host, or a window that opens minimized.
-    // Handing it over would drop what it asked for and report success.
+    // If we handed it over, we would drop what it asked for and report success.
     Standalone,
     Present,
     AddTorrents
 };
 
-// An instance you can talk to: this process, or one reached over a transport.
-// The caller doesn't need to know which -- nor whether it is even this program.
-// A separately-built client that shares a config dir answers here too,
-// so what follows binds any implementation, not just these clients.
+// An instance we can talk to: this process, or one reached over a transport.
+// The caller does not need to know which, or even whether it is this program.
+// A separately-built client sharing the config dir answers here too,
+// so the methods below have to work for any implementation.
 class Instance
 {
 public:
     virtual ~Instance() = default;
 
-    // returns `std::nullopt` for unreachable remote instances.
-    // false means reached, but the instance couldn't do the thing.
+    // Returns `std::nullopt` for unreachable remote instances.
+    // False means reached, but the instance couldn't do the thing.
     [[nodiscard]] virtual std::optional<bool> present_window() = 0;
     [[nodiscard]] virtual std::optional<bool> add_metainfo(std::string_view metainfo) = 0;
 
-    // The canonical config dir this instance serves, as interop-names.h defines canonical.
-    // Empty when the instance did not say, which a release without the method never can.
-    // An instance that serves no config dir -- one attached to a session on another host --
-    // is not a candidate for delegation at all and must not be published.
+    // The canonical config dir this instance serves, canonical as interop-names.h defines it.
+    // Empty when the instance did not say. A release older than the ConfigDir() method cannot.
+    // Some instances serve no config dir at all, such as a client attached to a session on
+    // another host. Do not publish those, because nothing can be delegated to them.
     [[nodiscard]] virtual std::string config_dir() = 0;
 
     // For log messages. Never parsed.
@@ -57,30 +57,28 @@ public:
     // Whoever owns the Instance must destroy the Transport before releasing it.
     virtual void publish(Instance& self) = 0;
 
-    // Does NOT filter by config dir: which instance counts as a match is
-    // StartupCoordinator's decision (startup-coordinator.h), so every transport
-    // answers this the same way. Must never return this process.
+    // Does NOT filter by config dir. StartupCoordinator decides which instance counts as
+    // a match (startup-coordinator.h), so every transport answers this the same way.
+    // Must never return this process.
     [[nodiscard]] virtual std::unique_ptr<Instance> find_other_instance() = 0;
 };
 
-// Returns the canonical form of `config_dir`, as interop-names.h defines it.
-// That comment is the contract; this is its one implementation. Every ConfigDir()
-// answerer, every comparison, and every COM moniker item goes through here.
+// The one implementation of the canonicalization rule in interop-names.h.
+// Every ConfigDir() answer, every comparison, and every COM moniker item goes through here.
 [[nodiscard]] std::string canonical_config_dir(std::string_view config_dir);
 
 // The canonical form of `config_dir`, creating the directory first if it is not there.
-// A launch resolves the dir before it can know whether one is already running on it, and
-// a dir that does not exist cannot be resolved -- so a first launch would otherwise settle
-// on a spelling that every later launch, resolving a dir that by then exists, disagrees
-// with. D-Bus survives that, since both ends re-canonicalize before comparing; the COM
-// moniker, which matches the config dir as an exact string, does not.
+// We cannot resolve a dir that does not exist, so a first launch would otherwise settle on a
+// spelling that later launches disagree with, once the dir exists for them to resolve.
+// D-Bus survives that, because both ends re-canonicalize before comparing.
+// The COM moniker does not: it is matched as an exact string.
 [[nodiscard]] std::string canonical_config_dir_created(std::string_view config_dir);
 
-// The running-object-table item a Windows client registers for `config_dir`, and the one
-// a launch looks up. Interop contract: the lookup matches this string exactly and nothing
-// re-canonicalizes it, so a client that builds it differently is never found. Lives here,
-// off Windows, because that makes it the one thing about the COM path that every platform
-// can test. Canonicalizes `config_dir` itself rather than trusting the caller to have.
+// The running-object-table item a Windows client registers for `config_dir`, and the one a
+// launch looks up. The lookup matches this string exactly and nothing re-canonicalizes it,
+// so a client that builds it differently is never found.
+// This canonicalizes `config_dir` itself rather than trust the caller to have done it.
+// Declared here rather than in the Windows code so that every platform can test it.
 [[nodiscard]] std::string com_config_moniker_item(std::string_view config_dir);
 
 // Returns true if `arg` is a URL or a magnet link.
@@ -93,11 +91,11 @@ public:
 // Returns empty when the argument is none of the above.
 [[nodiscard]] std::optional<std::string> encode_metainfo_arg(std::string_view arg);
 
-// Reads back the wire form encode_metainfo_arg() writes, so that what counts as a
-// torrent is decided here rather than once per client.
+// Reads back the wire form encode_metainfo_arg() writes, so we decide what counts as a
+// torrent here rather than once per client.
 // Returns the .torrent contents `metainfo` carries, or nothing when it carries none:
 // it is a link, it is not base64, or what it decodes to is not a torrent.
-// Ask is_metainfo_link() first -- a link is the other form, not a malformed torrent.
+// Ask is_metainfo_link() first. A link is the other form, not a malformed torrent.
 [[nodiscard]] std::optional<std::string> decode_metainfo_torrent(std::string_view metainfo);
 
 } // namespace tr::interop

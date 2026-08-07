@@ -560,8 +560,8 @@ TEST_F(DhtTest, savesStateIfSwarmIsGood)
     EXPECT_TRUE(tr_sys_path_exists(dat_file.c_str()));
 }
 
-// dht.dat lives in the config dir, so a session that found the dir held by another
-// leaves it alone -- a healthy swarm is not a licence to write over the holder's copy.
+// dht.dat lives in the config dir, so a session that found the dir held by another leaves
+// it alone, however healthy its own view of the swarm.
 TEST_F(DhtTest, doesNotSaveStateToAConfigDirAnotherSessionHolds)
 {
     auto const state_file = MockStateFile{};

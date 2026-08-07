@@ -47,9 +47,8 @@ auto const ObjectPath = QStringLiteral(TR_INTEROP_DBUS_OBJECT_PATH);
 auto const ForeignInterfaceName = QStringLiteral("org.example.OtherClient");
 auto const ForeignObjectPath = QStringLiteral("/org/example/OtherClient");
 
-// What every stand-in needs, and no interface name --
-// a base that declared one would lend it to every subclass,
-// since Q_CLASSINFO is inherited and Qt walks the hierarchy looking for it.
+// What every stand-in needs, and no interface name:
+// Q_CLASSINFO is inherited, so one declared in the base would be found for every subclass.
 class FakeClientBase : public QObject
 {
     Q_OBJECT
@@ -118,8 +117,8 @@ public:
     using PlaceableFakeClient::PlaceableFakeClient;
 };
 
-// A client built from other sources: the same calls under its own interface name,
-// which is what a caller has to be willing to speak.
+// A client built from other sources: the same calls under its own interface name.
+// A caller has to be willing to speak it.
 class ForeignFakeClient : public PlaceableFakeClient
 {
     Q_OBJECT
@@ -130,9 +129,8 @@ public:
 };
 
 // Puts a fake client on its own bus connection in its own thread.
-// The thread is what makes the fake answerable:
-// the transport under test calls over D-Bus and blocks for the reply,
-// so a client sharing the calling thread could never run.
+// The fake needs that thread to answer at all: the transport under test calls over D-Bus
+// and blocks for the reply, so a client sharing the calling thread could never run.
 class ClientThread
 {
 public:
@@ -245,8 +243,8 @@ void claimConfigDir(
     QString const& interface = InterfaceName,
     QString const& path = ObjectPath)
 {
-    // Through the writer a client really uses, so a change to the format cannot leave these
-    // cases passing against a spelling no client writes any more.
+    // Through the writer a real client uses, so a change to the format cannot leave these
+    // cases passing against a spelling nothing writes.
     // writeRawRecord() is for the records below that are meant to be malformed.
     QVERIFY(
         tr::interop::write_dbus_peer_record(
@@ -363,7 +361,7 @@ private slots:
     }
 
     // ConfigDir() is required to answer canonically, but a client built from other sources may not.
-    // Reaching it anyway is what keeps one end's normalisation from deciding whether the two agree.
+    // Reaching it anyway keeps one end's normalisation from deciding whether the two agree.
     static void finds_a_client_that_answers_with_an_unresolved_path()
     {
         auto const dir = QTemporaryDir{};
@@ -382,7 +380,7 @@ private slots:
     // The record says which interface to speak,
     // so a client built from other sources is reachable
     // without either side implementing a name in the other's namespace.
-    // This is what lets separate projects hand torrents to whichever of them is running on the config dir.
+    // That is how separate projects hand torrents to whichever of them is running on the config dir.
     static void delegates_to_a_client_that_names_its_own_interface()
     {
         auto const dir = QTemporaryDir{};
@@ -424,9 +422,9 @@ private slots:
         QVERIFY(client.received().isEmpty());
     }
 
-    // A half-written record -- a client killed mid-write -- must not strand the caller.
-    // Unreadable means "nothing recorded", which leaves the well-known name to try,
-    // and that answer is still checked against our config dir.
+    // A half-written record, from a client killed mid-write, must not strand the caller.
+    // Unreadable means "nothing recorded", so we still have the well-known name to try,
+    // and we still check that answer against our config dir.
     static void falls_back_to_the_well_known_name_when_the_record_is_unreadable()
     {
         auto const dir = QTemporaryDir{};
@@ -462,9 +460,9 @@ private slots:
         QVERIFY(unrelated.received().isEmpty());
     }
 
-    // A client that predates ConfigDir() cannot be placed, and is the only one a caller can reach.
-    // Delegating to it keeps upgrades from opening a second window
-    // on the config dir the running client is most likely already on.
+    // A client that predates ConfigDir() cannot say which dir it serves, and here it is the
+    // only one a caller can reach. Delegating to it keeps an upgrade from opening a second
+    // window on the config dir that client is most likely already using.
     static void delegates_to_a_client_too_old_to_place_itself()
     {
         auto const dir = QTemporaryDir{};
@@ -544,10 +542,11 @@ private slots:
                                        QDBusConnection::disconnectFromBus(name);
                                    } };
 
-        // Joined before the first verify: a failed verify returns out of the test with `caller` still joinable,
-        // and destroying a joinable thread is std::terminate -- a crash in place of the report.
-        // The wait keeps this thread dispatching so the service can answer;
-        // a timed-out call still ends on its own, so the join is bounded.
+        // Join before the first verify. A failed verify returns out of the test with `caller`
+        // still joinable, and destroying a joinable thread calls std::terminate, so we would
+        // get a crash instead of the report.
+        // The wait keeps this thread dispatching so the service can answer.
+        // A timed-out call ends on its own, so the join is bounded.
         auto const answered_in_time = QTest::qWaitFor([&answered]() { return answered.load(); }, 5000);
         caller.join();
         QVERIFY(answered_in_time);
@@ -555,7 +554,7 @@ private slots:
         QVERIFY(accepted.load());
         QCOMPARE(instance.adds, std::vector<std::string>{ "magnet:?xt=published" });
 
-        // interop-names.h promises the call arrives where the window lives.
+        // InteropObject.h promises the call arrives on the GUI thread, where the window lives.
         QCOMPARE(instance.called_on, QThread::currentThread());
 
         QVERIFY(QDBusConnection::sessionBus().unregisterService(ServiceName));

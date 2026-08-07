@@ -62,8 +62,8 @@ public:
     void raise() const;
     bool notifyApp(QString const& title, QString const& body, QStringList const& actions = {}) const;
 
-    // True when this launch found the config dir held by another session, and is giving
-    // way rather than writing over the files that session owns.
+    // True when this launch found the config dir held by another session.
+    // We give way rather than write over the files that session owns.
     [[nodiscard]] bool configDirIsContended() const noexcept;
 
     QString intern(QString const& in);
@@ -114,7 +114,7 @@ private slots:
 
 private:
     // A pure adapter: every method is one call into something Application already does.
-    // If it grows a decision, the seam is wrong -- the decision belongs in tr::interop::StartupCoordinator.
+    // Decisions belong in tr::interop::StartupCoordinator, not here.
     class LocalInstance final : public tr::interop::Instance
     {
     public:

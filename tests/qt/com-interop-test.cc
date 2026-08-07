@@ -139,10 +139,10 @@ private slots:
         QCOMPARE(found->config_dir(), std::string{ "C:/legacy" });
     }
 
-    // Registering a second object under a class id that already has one leaves COM free to
-    // return either -- the documentation promises nothing. So the second client does not
-    // register at all, and the fallback stays with whoever was there first rather than
-    // with whichever one a given Windows happens to hand back.
+    // If a second object registers under a class id that already has one, COM may return
+    // either. The documentation promises nothing.
+    // So the second client does not register at all. The fallback then stays with whoever
+    // was there first, rather than with whichever one a given Windows hands back.
     static void leaves_the_class_id_with_the_first_client_to_take_it()
     {
         auto first_instance = FakeInstance{ "C:/first" };

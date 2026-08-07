@@ -20,9 +20,9 @@
 class tr_stats
 {
 public:
-    // `persist` is false when the config dir belongs to another session:
-    // accounting continues in memory,
-    // but stats.json is the owner's to write, so save() becomes a no-op.
+    // `persist` is false when the config dir belongs to another session.
+    // We go on counting in memory, but save() does nothing:
+    // stats.json is the owner's to write.
     tr_stats(std::string_view const config_dir, time_t const now, bool const persist)
         : config_dir_{ config_dir }
         , start_time_{ now }

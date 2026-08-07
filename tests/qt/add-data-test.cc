@@ -19,7 +19,7 @@
 
 using namespace std::string_view_literals;
 
-// What AddMetainfo carries, which is a wire contract with clients built from other sources.
+// What AddMetainfo carries. This is a wire contract with clients built from other sources.
 class AddDataTest : public QObject
 {
     Q_OBJECT
@@ -78,8 +78,8 @@ void AddDataTest::readsALinkAsItself()
     QCOMPARE(magnet->type, static_cast<int>(AddData::MAGNET));
 }
 
-// A bare path is not a form AddMetainfo defines. Reading one would open a file
-// this process can reach and the sender named -- on a bus, a sender that need not own it.
+// A bare path is not a form AddMetainfo defines. Reading one would open a file the sender
+// named and this process can reach. Across a bus, the sender need not even own it.
 void AddDataTest::refusesAPathNamingAFileOnThisHost()
 {
     auto dir = QTemporaryDir{};

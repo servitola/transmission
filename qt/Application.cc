@@ -259,10 +259,10 @@ Application::Application(
 
 #endif
 
-    // Publish only what a later launch can rightly be handed to: a client running the
-    // session in this process, on the config dir it was pointed at. A client attached to a
-    // session on another host serves no config dir, and would collect the torrents meant
-    // for whoever does.
+    // Publish only a client a later launch can rightly be handed to: one running the session
+    // in this process, on the config dir it was pointed at.
+    // A client attached to a session on another host serves no config dir, and would collect
+    // torrents meant for whoever does.
     if (session_->isServer())
     {
         startup_coordinator_->publish(interop_instance_);
@@ -441,7 +441,7 @@ void Application::onConfigDirContended()
     // This launch is exiting; the settings on disk are the holder's.
     prefs_->disableSaveOnExit();
 
-    // A session that starts from the connection dialog reaches this after exec() is under way,
+    // A session started from the connection dialog gets here after exec() is under way,
     // where returning from the constructor no longer ends the launch.
     quit();
 }
@@ -572,8 +572,8 @@ void Application::onNotificationActionInvoked(quint32 /* notification_id */, QSt
 
 std::optional<bool> Application::LocalInstance::present_window()
 {
-    // Shown and unminimized, not merely alerted:
-    // the caller is a launch this one took over, and a launch that produces no window did nothing.
+    // Show and unminimize the window rather than just alert the user.
+    // We took over another launch, and a launch that produces no window did nothing.
     app_.window_->presentWindow();
     return true;
 }
@@ -592,9 +592,8 @@ std::optional<bool> Application::LocalInstance::add_metainfo(std::string_view co
 
 std::string Application::LocalInstance::config_dir()
 {
-    // Resolved here rather than taken on trust from whoever built this process:
-    // interop.h asks this of every implementation,
-    // and an answer is worth no more than the weakest path that reaches it.
+    // We canonicalize here rather than trust however this process was configured.
+    // interop.h requires a canonical answer from every implementation.
     return tr::interop::canonical_config_dir(app_.prefs_->configDir().toStdString());
 }
 

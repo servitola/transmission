@@ -509,9 +509,8 @@ protected:
     }
 
     // Settings for a test that starts a second session, quieted the same way the fixture's own session is.
-    // Only the settings named here are set,
-    // so that the quiet ones are the ones missing for applyQuietDefaults() to fill in;
-    // tr_sessionInit() supplies the rest.
+    // Only the settings named here are set. The quiet ones are left missing for
+    // applyQuietDefaults() to fill in, and tr_sessionInit() supplies the rest.
     // The port is randomized so the two sessions do not contend for one.
     [[nodiscard]] tr_variant quietSettings() const
     {

@@ -16,9 +16,10 @@
 /**
  * Marks a config dir as in use for as long as this object is alive.
  *
- * A session's settings, resume files and stats are written as though they have a single owner.
- * Taking this lock is how a second session finds out the dir is not its own --
- * and a session that lost it to another holder stops saving there (see tr_session::mayWriteConfigDir()).
+ * Everything a session writes to its config dir assumes a single owner.
+ * A second session takes this lock to find out the dir is not its own,
+ * and stops writing there when it finds the lock held.
+ * See tr_session::mayWriteConfigDir().
  */
 class tr_config_dir_lock
 {

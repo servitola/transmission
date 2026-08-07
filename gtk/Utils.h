@@ -71,7 +71,7 @@ Glib::ustring tr_strlsize(libtransmission::Values::Storage const& storage);
 /* return a human-readable string for the given ratio. */
 Glib::ustring tr_strlratio(double ratio);
 
-// A D-Bus argument list. The tuple is what a call's parameters always are,
+// A D-Bus argument list: parameters are always a tuple,
 // even when there is one of them or none.
 template<typename... Ts>
 [[nodiscard]] Glib::VariantContainerBase gtr_variant_tuple(Ts&&... args)

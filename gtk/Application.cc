@@ -169,7 +169,7 @@ private:
     };
 
     // A pure adapter: every method is one call into something Impl already does.
-    // If it grows a decision, the seam is wrong -- the decision belongs in tr::interop::StartupCoordinator.
+    // Decisions belong in tr::interop::StartupCoordinator, not here.
     class LocalInstance final : public tr::interop::Instance
     {
     public:
@@ -1747,9 +1747,8 @@ std::optional<bool> Application::Impl::LocalInstance::add_metainfo(std::string_v
 
 std::string Application::Impl::LocalInstance::config_dir()
 {
-    // Resolved here rather than taken on trust from whoever built this process:
-    // interop.h asks this of every implementation,
-    // and an answer is worth no more than the weakest path that reaches it.
+    // We canonicalize here rather than trust however this process was configured.
+    // interop.h requires a canonical answer from every implementation.
     return tr::interop::canonical_config_dir(impl_.config_dir_);
 }
 

@@ -348,9 +348,6 @@ int tr_main(int argc, char* argv[])
 
     auto* const h = tr_sessionInit(config_dir, false, settings);
 
-    // A session that does not hold the config dir leaves the owner's settings, resume files and stats alone,
-    // so this run would download and then keep none of it.
-    // Refusing up front costs the user the bandwidth instead of spending it for nothing.
     if (tr_sessionConfigDirIsContended(h))
     {
         fmt::print(

@@ -89,14 +89,13 @@ private:
     return client;
 }
 
-// How one machine routes to the right client: the running object table is keyed by moniker,
+// How one machine routes to the right client. The running object table is keyed by moniker,
 // so an item moniker naming the config dir gives every dir its own entry.
 // GetActiveObject() -- the fallback below -- is keyed by class id alone,
-// which is why it can only ever find "some" client.
+// so it can only ever find "some" client.
 //
-// The prefix is part of the wire contract,
-// so a separately-built client that shares it is findable here and finds this one.
-// That is the point of sharing it, and the cost is below, at publish.
+// The prefix is part of the wire contract: a separately-built client that shares it
+// finds this one, and is found by it.
 [[nodiscard]] IMoniker* createConfigMoniker(QString const& config_dir)
 {
     auto* moniker = static_cast<IMoniker*>(nullptr);
@@ -181,9 +180,9 @@ public:
     }
 
 private:
-    // An invalid reply covers both a release without the method and an object whose process has gone;
-    // COM cannot tell either from "reached, and it declined".
-    // Treat silence as silence and let tr::interop::StartupCoordinator draw the line.
+    // An invalid reply covers a release too old to have the method, and an object whose
+    // process has gone. COM cannot tell either one from "reached, and declined".
+    // Report it as no answer and let tr::interop::StartupCoordinator decide.
     [[nodiscard]] QVariant call(std::string_view const method, QVariant const& arg = {})
     {
         if (!arg.isValid())
@@ -210,8 +209,8 @@ public:
 
     ~Impl()
     {
-        // Cleared first: a factory-built InteropObject answers for whatever this named,
-        // and COM can hand one out until the revocations below have all landed.
+        // Cleared first: COM can still hand out a factory-built InteropObject
+        // until every revocation below has landed.
         InteropObject::publish_instance(nullptr);
 
         if (config_cookie_ != 0U && table_ != nullptr)
@@ -253,14 +252,13 @@ public:
             return;
         }
 
-        // Two products publishing for one config dir diverge by platform by nature, not oversight:
-        // the D-Bus record is a file, so its last writer holds it and a caller reaches that one.
-        // Here both registrations stand, and COM does not say which a later lookup reaches --
-        // not the first, not the last, undefined.
-        // Do not build on whichever one a given Windows happens to return.
+        // When two products publish for one config dir, both registrations stand.
+        // COM does not say which one a later lookup reaches: not the first, not the last,
+        // undefined. Do not build on whichever a given Windows happens to return.
+        // D-Bus differs here, because its record is a file and the last writer holds it.
         //
-        // The config dir lock is what keeps a second session off the dir in the first place,
-        // so this is the degenerate case, not the shared one.
+        // The config dir lock keeps a second session off the dir to begin with,
+        // so this is the degenerate case.
         if (auto* moniker = createConfigMoniker(config_dir_); moniker != nullptr)
         {
             if (SUCCEEDED(::GetRunningObjectTable(0, &table_)) && table_ != nullptr &&
@@ -295,9 +293,8 @@ public:
             return {};
         }
 
-        // The moniker is what picks out this config dir;
-        // the class id knows nothing about dirs,
-        // so what it finds is checked by tr::interop::StartupCoordinator like any other candidate.
+        // The moniker picks out this config dir. The class id knows nothing about dirs, so
+        // tr::interop::StartupCoordinator checks whatever it finds like any other candidate.
         auto client = connectToConfigClient(config_dir_);
         if (client == nullptr)
         {
@@ -331,9 +328,8 @@ void ComTransport::publish(tr::interop::Instance& self)
 
 std::unique_ptr<tr::interop::Instance> ComTransport::find_other_instance()
 {
-    // The running object table cannot hold this process's entry
-    // while this process is still deciding whether to start:
-    // registration happens in publish(), after delegation has been ruled out.
+    // Never this process: registration happens in publish(),
+    // after delegation has already been ruled out.
     return impl_->find_other_instance();
 }
 

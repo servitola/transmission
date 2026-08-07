@@ -59,8 +59,8 @@ auto const ObjectPath = QStringLiteral(TR_INTEROP_DBUS_OBJECT_PATH);
 class RemoteInstance final : public tr::interop::Instance
 {
 public:
-    // The interface and path are whatever the peer recorded, which need not be this build's own:
-    // a client built from other sources names its own interface, and calling one asks nobody's leave.
+    // The interface and path are whatever the peer recorded, and need not be this build's own.
+    // A client built from other sources names its own interface, and we call whatever it named.
     RemoteInstance(QString service, QString interface, QString path)
         : service_{ std::move(service) }
         , interface_{ std::move(interface) }
@@ -80,9 +80,9 @@ public:
 
     [[nodiscard]] std::string config_dir() override
     {
-        // No answer covers both a release without the method and a peer that has gone:
-        // tr::interop::StartupCoordinator takes the first kind,
-        // and unmasks the second when the intent call also goes unanswered.
+        // No answer covers a release too old to have the method, and a peer that has gone.
+        // StartupCoordinator treats the empty answer as a match. A peer that has really
+        // gone leaves the intent call unanswered too, which is where we find out.
         auto const dir = call<QString>(tr::interop::MethodConfigDir);
         return dir ? dir->toStdString() : std::string{};
     }
@@ -98,14 +98,14 @@ public:
 
 private:
     // Only a valid reply proves this endpoint implements the method.
-    // Identity and signature errors can come from an unrelated process
-    // that inherited a stale record's reused unique bus name.
+    // Identity and signature errors can come from an unrelated process that inherited
+    // a reused unique bus name from a stale record.
     template<typename T>
     [[nodiscard]] std::optional<T> call(std::string_view const method, QVariantList const& args = {}) const
     {
         auto request = QDBusMessage::createMethodCall(service_, path_, interface_, Utils::toQString(method));
         request.setArguments(args);
-        // The default timeout: a client that is merely busy must not read as absent.
+        // Keep the default timeout. A client that is merely busy must not look absent.
         auto const reply = QDBusReply<T>{ QDBusConnection::sessionBus().call(request) };
         return reply.isValid() ? std::optional<T>{ reply.value() } : std::nullopt;
     }

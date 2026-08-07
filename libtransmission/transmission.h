@@ -55,9 +55,9 @@ struct tr_torrent;
 struct tr_torrent_metainfo;
 struct tr_variant;
 
-// Interop contract, shared with separately-built clients: a third-party RPC client
-// works against any of them only while they all spell these the same way.
-// `libtransmission-app/interop-names.h` inventories every such name, here and there.
+// Interop contract, shared with separately-built clients. A third-party RPC client works
+// against all of them only while they spell these the same way.
+// `libtransmission-app/interop-names.h` inventories every such name, in that header and this one.
 #define TR_RPC_SESSION_ID_HEADER "X-Transmission-Session-Id"
 #define TR_RPC_RPC_VERSION_HEADER "X-Transmission-Rpc-Version"
 
@@ -122,9 +122,9 @@ enum : int8_t
 size_t tr_getDefaultConfigDirToBuf(char const* appname, char* buf, size_t buflen);
 
 // The appname the interactive clients pass to `tr_getDefaultConfigDir()`.
-// Interop contract, shared with separately-built clients: it is what makes a user's
-// settings and torrents survive replacing one client with another.
-// The daemon is deliberately not one of these -- it defaults to its own dir.
+// Interop contract, shared with separately-built clients. It lets a user's settings
+// and torrents survive replacing one client with another.
+// The daemon deliberately does not use it, and defaults to its own dir.
 #define TR_CONFIG_DIR_NAME "transmission"
 
 /**
@@ -269,6 +269,9 @@ char const* tr_sessionGetConfigDir(tr_session const* session);
 /**
  * @brief Return whether another session holds the lock on this session's config dir.
  *
+ * True does not stop the session. It keeps running, but never writes the config dir,
+ * so nothing it does is saved.
+ *
  * False means either this session acquired the lock or locking was unavailable.
  * It does not prove that this session has exclusive ownership of the directory.
  */
@@ -278,8 +281,8 @@ char const* tr_sessionGetConfigDir(tr_session const* session);
  * @brief Return whether another process holds the lock on `config_dir` right now.
  *
  * Asks without starting a session, for a caller deciding whether to start one at all.
- * The answer describes the instant it was taken: a caller that goes on to start a
- * session still learns the outcome that counts from `tr_sessionConfigDirIsContended()`.
+ * The answer describes the instant it was taken. A caller that goes on to start a session
+ * should still check `tr_sessionConfigDirIsContended()`. That is the answer that counts.
  */
 #ifdef __cplusplus
 [[nodiscard]] bool tr_configDirIsContended(std::string_view config_dir);

@@ -34,8 +34,8 @@ private:
             , model{ prefs }
             , window{ session, prefs, model, /*minimized=*/true }
         {
-            // Nothing here is a session worth persisting, and the type registrations
-            // that make prefs writable are the Application's, which no test builds.
+            // Nothing here is a session worth persisting. Writable prefs need type
+            // registrations that Application makes, and no test builds an Application.
             prefs.disableSaveOnExit();
         }
 

@@ -69,9 +69,9 @@ public:
 
     // The two forms interop-names.h defines for AddMetainfo, and no others:
     // a link as itself, or a torrent file's contents base64'd.
-    // A bare path is not one of them. set() would resolve one against this process's
-    // working directory and read whatever it found there, which is a file the sender
-    // named but does not share -- and on the receiving end of a bus, need not own.
+    // A bare path is not one of them. set() would resolve it against this process's working
+    // directory and read whatever it found there. The sender named that file but does not
+    // share it, and across a bus need not even own it.
     [[nodiscard]] static std::optional<AddData> fromWireMetainfo(std::string_view metainfo);
 
     int type = NONE;

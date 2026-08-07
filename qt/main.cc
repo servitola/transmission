@@ -84,8 +84,9 @@ char const* getUsage()
         }
         else
         {
-            // This launch is being handed over, so it never reaches the code that would
-            // otherwise report the argument. Silence here would read as "all of it landed".
+            // Report it here. This launch is being handed over, so it never reaches the code
+            // that would otherwise report it, and saying nothing would look like every
+            // argument landed.
             fmt::print(stderr, "Skipping '{:s}': not a torrent file, URL or magnet link.\n", filename.toStdString());
         }
     }
@@ -183,9 +184,8 @@ int tr_main(int argc, char** argv)
         }
     }
 
-    // Resolve the config dir before anything asks whether a client is already running:
-    // the answer is per config dir,
-    // and two clients on different ones are separate instances, not duplicates.
+    // Resolve the config dir before asking whether a client is already running: the answer is
+    // per config dir, and two clients on different dirs are separate instances, not duplicates.
     if (config_dir.isNull())
     {
         config_dir = QString::fromStdString(tr_getDefaultConfigDir(TR_CONFIG_DIR_NAME));
@@ -198,8 +198,8 @@ int tr_main(int argc, char** argv)
     auto startup_coordinator = std::make_unique<tr::interop::StartupCoordinator>(
         config_dir_str,
         tr::interop::make_transport(config_dir));
-    // -r/-p/-u/-w name a session on another host, which is not this config dir's instance at all,
-    // and -m asks for a window that opens minimized, which presenting one is the opposite of.
+    // -r/-p/-u/-w name a session on another host, which is not this config dir's instance at all.
+    // -m asks for a window that opens minimized, and presenting one would do the opposite.
     // These are read into prefs further down, past the point a handed-over launch returns from.
     auto const standalone = minimized || !host.isNull() || !port.isNull() || !username.isNull() || !password.isNull();
 
@@ -268,7 +268,7 @@ int tr_main(int argc, char** argv)
 
     auto const result = QApplication::exec();
 
-    // A launch that starts its session from the connection dialog learns the dir is held only here.
+    // A launch that starts its session from the connection dialog only finds out here that the dir is held.
     if (app.configDirIsContended())
     {
         return tr::interop::report_config_dir_busy(config_dir_str);

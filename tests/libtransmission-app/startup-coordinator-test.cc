@@ -105,9 +105,9 @@ TEST_F(StartupCoordinatorTest, publishesBeforeReleasing)
     EXPECT_TRUE(prober.try_acquire());
 }
 
-// A launch that starts without publishing still has to end the interval it holds the
-// guard for. Leaving it held would make the next launch on this dir wait out its full
-// patience and then report a busy dir that nobody is reachable on.
+// A launch that starts without publishing still has to release the startup lock.
+// Leaving it held would make the next launch on this dir wait out its full patience,
+// then report a busy dir that nobody is reachable on.
 TEST_F(StartupCoordinatorTest, publishNothingReleasesTheGuard)
 {
     auto published = false;

@@ -25,8 +25,8 @@ namespace tr::interop
 namespace
 {
 
-// Longer than any record written here -- a bus name alone is capped at 255 --
-// so anything bigger is not a record.
+// A bus name alone is capped at 255, so every record we write is far shorter than this.
+// Anything bigger is not a record.
 auto constexpr MaxRecordLen = size_t{ 4096U };
 
 [[nodiscard]] tr_pathbuf record_path(std::string_view const config_dir)
@@ -43,8 +43,8 @@ auto constexpr MaxNameLen = size_t{ 255U };
 }
 
 // Two or more dot-separated elements, none empty.
-// The hyphen and the leading digit are the whole of the difference
-// between the bus-name grammar and the interface-name grammar.
+// The two flags cover the only difference between the bus-name grammar and the
+// interface-name grammar: a hyphen, and a leading digit.
 [[nodiscard]] constexpr bool is_dotted_name(
     std::string_view const name,
     bool const allow_hyphen,
@@ -83,13 +83,13 @@ auto constexpr MaxNameLen = size_t{ 255U };
     return n_elements >= 2U;
 }
 
-// A colon, then the elements a bus name is made of, which unlike an interface's may lead with a digit.
+// A colon, then the elements of a bus name. Unlike an interface's, these may lead with a digit.
 [[nodiscard]] constexpr bool is_unique_bus_name(std::string_view const name) noexcept
 {
     return !std::empty(name) && name.front() == ':' && is_dotted_name(name.substr(1U), true, true);
 }
 
-// Slash-separated elements, none empty, no hyphens -- or the root alone.
+// Slash-separated elements, none empty, no hyphens. The root alone also counts.
 [[nodiscard]] constexpr bool is_object_path(std::string_view const path) noexcept
 {
     if (std::empty(path) || path.front() != '/')
@@ -139,8 +139,8 @@ std::optional<DBusPeerRecord> read_dbus_peer_record(std::string_view const confi
 {
     auto const path = record_path(config_dir);
 
-    // Most launches find no record -- nothing is running -- so ask quietly first:
-    // tr_file_read() logs its failures, and this one is not news.
+    // Most launches find no record, because nothing is running. Check quietly first:
+    // tr_file_read() logs every failure, and a missing record is the normal case.
     if (!tr_sys_path_get_info(path))
     {
         return {};
@@ -166,7 +166,7 @@ std::optional<DBusPeerRecord> read_dbus_peer_record(std::string_view const confi
         auto const key = tr_strv_strip(line.substr(0U, sep));
         auto const value = tr_strv_strip(line.substr(sep + 1U));
 
-        // A key this version does not know belongs to a version that does.
+        // Unknown keys are ignored, so a newer version can add one without breaking this reader.
         if (key == "bus-name"sv)
         {
             record.bus_name = value;
@@ -181,10 +181,10 @@ std::optional<DBusPeerRecord> read_dbus_peer_record(std::string_view const confi
         }
     }
 
-    // Only a unique bus name is ever recorded,
-    // and only names within the grammars above can be handed to a D-Bus library without it objecting.
-    // A partial record is discarded rather than completed from interop-names.h:
-    // half an address is not evidence that anyone is listening.
+    // We only ever record a unique bus name, and a D-Bus library only accepts names
+    // matching the grammars above.
+    // We discard a partial record rather than fill it in from interop-names.h.
+    // Half a record is no evidence that anyone is listening.
     auto const usable = is_unique_bus_name(record.bus_name) && is_dotted_name(record.interface, false, false) &&
         is_object_path(record.path);
 

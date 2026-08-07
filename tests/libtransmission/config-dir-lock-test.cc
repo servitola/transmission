@@ -60,8 +60,8 @@ TEST_F(ConfigDirLockTest, reportsWhetherAnotherProcessHoldsTheDir)
     EXPECT_TRUE(tr_configDirIsContended(sandboxDir()));
 }
 
-// The probe takes the lock to ask and gives it straight back, so asking twice in a row
-// answers the same both times -- and leaves the dir free for the session that follows.
+// The probe takes the lock to ask and gives it straight back. Asking twice in a row
+// therefore answers the same both times, and leaves the dir free for the next session.
 TEST_F(ConfigDirLockTest, probingDoesNotKeepTheDir)
 {
     EXPECT_FALSE(tr_configDirIsContended(sandboxDir()));

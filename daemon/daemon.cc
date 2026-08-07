@@ -861,18 +861,16 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
 
     /* start the session */
 
-    // A daemon replacing one that is still shutting down finds the dir held: the outgoing
-    // process keeps its lock until its close has announced to every tracker, seconds later.
-    // Waiting for that is what restarting the service means, so wait before refusing --
-    // and only ever for a process that is still there, since the kernel drops the lock when one dies.
-    // Supervision that sequences the stop ahead of the start never reaches this.
+    // If the lock is held by another instance, we should wait for it.
+    // The kernel drops the lock unconditionally when the other instance exits,
+    // so never get stuck waiting on a dead process' lock.
     static auto constexpr LockPatience = std::chrono::seconds{ 15 };
     static auto constexpr LockRetryInterval = std::chrono::seconds{ 1 };
 
     if (auto const deadline = std::chrono::steady_clock::now() + LockPatience; tr_configDirIsContended(config_dir_))
     {
-        // printMessage rather than the log, which is not routed anywhere this early:
-        // a start that pauses for fifteen seconds has to say why while it is happening.
+        // printMessage rather than the log, which is not routed anywhere this early.
+        // A start that pauses for fifteen seconds has to say why while it happens.
         printMessage(
             log_stream_,
             TR_LOG_INFO,
@@ -890,8 +888,8 @@ int tr_daemon::start([[maybe_unused]] bool foreground)
     auto* session = tr_sessionInit(config_dir_, true, settings_);
     tr_logAddInfo(fmt::format(fmt::runtime(_("Loading settings from '{path}'")), fmt::arg("path", config_dir_)));
 
-    // The session's own lock is the one that decides: each probe above released the lock
-    // it took to ask, so the dir was only ever free as of the last of them.
+    // The session's own lock is the one that decides. Each probe above released the lock
+    // it took to ask, so a free answer only ever described that moment.
     if (tr_sessionConfigDirIsContended(session))
     {
         auto const errmsg = fmt::format(

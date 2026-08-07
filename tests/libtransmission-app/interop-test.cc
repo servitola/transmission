@@ -37,8 +37,8 @@ namespace
 using ::tr::interop::Intent;
 
 // What the instance a fake transport hands out should answer, and what it was asked.
-// The arbitration owns the Instance it is handed,
-// so the answers and the record of calls live out here where the test can still read them.
+// The arbitration owns that Instance,
+// so both live out here where the test can still read them.
 struct Script
 {
     explicit Script(std::string dir = {})
@@ -249,7 +249,7 @@ TEST_F(InteropTest, comparesConfigDirsThatDoNotResolveAsSpelled)
     EXPECT_EQ(0, coordinator->delegate(Intent::Present, {}));
 }
 
-// A release without the ConfigDir() method names no dir, and neither does one whose call went wrong.
+// A release too old to have ConfigDir() names no dir, and neither does one whose call went wrong.
 TEST_F(InteropTest, takesAnInstanceThatNamesNoConfigDir)
 {
     auto script = Script{};
@@ -260,8 +260,8 @@ TEST_F(InteropTest, takesAnInstanceThatNamesNoConfigDir)
     EXPECT_EQ(std::vector<std::string>{ "alpha" }, script.adds);
 }
 
-// A refusal still takes the launch -- a second window is what all of this prevents --
-// but the launch came to nothing, and this side is the only one that can say which file it was.
+// A refusal still takes the launch. Preventing a second window is the point of all this.
+// The launch came to nothing, though, and only this side can say which file it was.
 TEST_F(InteropTest, reportsWhenTheInstanceDeclinesTheTorrents)
 {
     auto script = Script{ sandboxDir() };
@@ -280,8 +280,8 @@ TEST_F(InteropTest, reportsWhenTheInstanceDeclinesToPresent)
     EXPECT_EQ(1, coordinator->delegate(Intent::Present, {}));
 }
 
-// Every file is still offered -- one the instance cannot use says nothing about the next --
-// and one refusal decides the launch, since a file the user named went nowhere.
+// We still offer every file. One the instance cannot use tells us nothing about the next.
+// One refusal decides the launch: a file the user named went nowhere.
 TEST_F(InteropTest, reportsARefusalAmongTorrentsThatLanded)
 {
     auto script = Script{ sandboxDir() };
@@ -318,7 +318,7 @@ TEST_F(InteropTest, startsWhenNoTorrentIsAnswered)
 
     EXPECT_FALSE(coordinator->delegate(Intent::AddTorrents, offering({ "alpha", "beta" })).has_value());
 
-    // the first unanswered offer is proof enough; the rest are never offered
+    // the first unanswered offer settles it, so we never offer the rest
     EXPECT_EQ(std::vector<std::string>{ "alpha" }, script.adds);
 }
 
@@ -387,9 +387,9 @@ TEST_F(InteropTest, canonicalConfigDirIsAbsolute)
     EXPECT_FALSE(tr_sys_path_is_relative(canonical));
 }
 
-// The Windows lookup key. Tested here because here it can be: a launch on Windows finds a
-// running client only when the two build this string identically, and nothing on that path
-// re-canonicalizes it the way the D-Bus comparison does.
+// The Windows lookup key, tested on every platform because every platform can.
+// A launch on Windows finds a running client only when the two build this string identically,
+// and nothing on that path re-canonicalizes it the way the D-Bus comparison does.
 TEST_F(InteropTest, comMonikerItemCarriesTheSharedPrefix)
 {
     auto const item = interop::com_config_moniker_item(sandboxDir());
@@ -399,7 +399,7 @@ TEST_F(InteropTest, comMonikerItemCarriesTheSharedPrefix)
 
 TEST_F(InteropTest, comMonikerItemNamesTheCanonicalDir)
 {
-    // What the caller spelled is not what identifies the dir; what it resolves to is.
+    // The dir is identified by what the path resolves to, not by how the caller spelled it.
     EXPECT_EQ(
         std::string{ interop::ComConfigMonikerPrefix } + interop::canonical_config_dir(sandboxDir()),
         interop::com_config_moniker_item(sandboxDir()));
@@ -437,8 +437,8 @@ TEST_F(InteropTest, aSymlinkedConfigDirHasTheComMonikerItemOfItsTarget)
 }
 #endif
 
-// The first launch on a config dir has to reach the same spelling as every launch after
-// it, and it cannot resolve a dir that is not there yet -- so it creates it first.
+// The first launch on a config dir has to reach the same spelling as every launch after it.
+// It cannot resolve a dir that is not there yet, so it creates the dir first.
 TEST_F(InteropTest, canonicalConfigDirCreatedResolvesADirThatWasNotThere)
 {
     auto const missing = sandboxDir() + "/made-on-demand";
@@ -519,8 +519,8 @@ TEST_F(InteropTest, contendedLaunchWaitsOutThePublisherThenDelegates)
                                      exit_code = launcher_coordinator->delegate(Intent::Present, {}, 5s);
                                  } };
 
-    // The publisher's publish-then-release;
-    // the launcher's final delegation attempt after acquiring the guard must find the published instance.
+    // The publisher publishes, then releases the startup lock. The launcher's final
+    // delegation attempt, made once it acquires that lock, must find the published instance.
     std::this_thread::sleep_for(100ms);
     transport->other = &script;
     auto published = ScriptedInstance{ script };

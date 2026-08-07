@@ -8,8 +8,8 @@
 namespace
 {
 
-// Mutable by design: publish_instance() names the process's one Instance after the transports exist,
-// and only ever on the GUI thread.
+// Mutable by design. publish_instance() names the process's one Instance once the
+// transports exist, and only ever on the GUI thread.
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 tr::interop::Instance* published_instance = nullptr;
 

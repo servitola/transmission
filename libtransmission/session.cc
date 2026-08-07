@@ -532,8 +532,6 @@ void tr_sessionSaveSettings(tr_session* session, char const* config_dir, tr_vari
 
     TR_ASSERT(client_settings.holds_alternative<tr_variant::Map>());
 
-    // The dir belongs to whichever session holds its lock;
-    // a session that found it contended must leave the owner's settings alone.
     if (!session->mayWriteConfigDir())
     {
         return;
@@ -2268,8 +2266,7 @@ auto makeBlocklistDir(std::string_view config_dir)
 auto makeConfigDirLock(std::string_view const config_dir)
 {
     // A dir has to exist before it can be locked,
-    // and the subdirs below are the first things written into it,
-    // so a session on a new config dir claims it too.
+    // so create it here rather than wait for the first write.
     tr_sys_dir_create(std::string{ config_dir }, TR_SYS_DIR_CREATE_PARENTS, 0777);
     return tr_config_dir_lock{ config_dir };
 }
@@ -2295,11 +2292,10 @@ tr_session::tr_session(std::string_view config_dir, tr_variant const& settings_d
     queue_timer_->start_repeating(QueueInterval);
     save_timer_->start_repeating(SaveInterval);
 
-    // Said here, where the lock is held, rather than by each client in turn.
-    // A lock that could not be taken at all leaves this session knowing nothing about who else
-    // is using the dir, which is the same news to whoever asked for the session.
-    // A dir another session holds is not this: that one has an owner, and the caller decides
-    // what to do about it -- see tr_sessionConfigDirIsContended().
+    // Warn here rather than in each client, and only when locking failed outright:
+    // nobody can then tell whether another session is using the dir.
+    // A dir another session holds is a different matter. The caller decides what to do
+    // about that (see tr_sessionConfigDirIsContended()).
     if (configDirLockStatus() == tr_config_dir_lock::Status::Unavailable)
     {
         tr_logAddWarn(

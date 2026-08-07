@@ -32,8 +32,8 @@ public:
     Application& operator=(Application const&) = delete;
     ~Application() override;
 
-    // True when this launch found the config dir held by another session, and is giving
-    // way rather than writing over the files that session owns.
+    // True when this launch found the config dir held by another session.
+    // We give way rather than write over the files that session owns.
     [[nodiscard]] bool configDirIsContended() const noexcept;
 
     friend void gtr_actions_handler(Glib::ustring const& action_name, gpointer user_data);

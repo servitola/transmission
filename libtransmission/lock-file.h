@@ -14,8 +14,8 @@
 /**
  * A nonblocking exclusive lock on one named file, created if absent.
  *
- * The lock lives on an open file descriptor, so the kernel releases it however the process ends:
- * a killed holder leaves nothing behind to clean up, and a leftover file is lockable by the next comer.
+ * The lock lives on an open file descriptor, so the kernel releases it however the process ends.
+ * A killed holder leaves nothing to clean up, and the next process can lock the file it left behind.
  */
 class tr_lock_file
 {
@@ -52,7 +52,7 @@ public:
         return handle_ != TR_BAD_SYS_FILE;
     }
 
-    // The outcome of the most recent try_acquire(); release() does not change it.
+    // The outcome of the most recent try_acquire(). release() does not change it.
     [[nodiscard]] constexpr Status status() const noexcept
     {
         return status_;

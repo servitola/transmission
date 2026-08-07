@@ -102,16 +102,16 @@ template<typename T>
     {
         auto const result = connection->call_sync(path, interface, method, params, service);
 
+        // The interface and path come from another client's peer record, so nothing constrains them.
         // GDBus refuses a name it considers malformed by returning no reply and setting no error,
-        // so a reply has to be checked for being there at all before it is read.
-        // The interface and path come from another client's peer record, which binds them to no grammar.
+        // so check that a reply is there at all before reading it.
         if (result.gobj() == nullptr || result.get_n_children() == 0U)
         {
             return {};
         }
 
-        // An answer of the wrong type is a client that does not speak this interface.
-        // Nothing here can use it, which is what no answer already means.
+        // An answer of the wrong type means a client that does not speak this interface.
+        // Report it as no answer at all.
         auto child = Glib::VariantBase{};
         result.get_child(child, 0U);
         if (!child.is_of_type(Glib::Variant<T>::variant_type()))
@@ -137,8 +137,8 @@ template<typename T, typename... Args>
 }
 
 // The unique name owning `name`, or empty when nobody does.
-// Asks the bus itself, so a recorded name that comes back unowned is a client that has exited --
-// not one worth a method call's timeout.
+// We ask the bus itself. A recorded name that comes back unowned belongs to a client that
+// has exited, and is not worth a method call's timeout.
 [[nodiscard]] Glib::ustring name_owner(Glib::RefPtr<Gio::DBus::Connection> const& connection, Glib::ustring const& name)
 {
     return bus_driver_call<Glib::ustring>(connection, "GetNameOwner", name).value_or(Glib::ustring{});
@@ -179,9 +179,9 @@ public:
 
     [[nodiscard]] std::string config_dir() override
     {
-        // No answer covers both a release without the method and a peer that has gone:
-        // tr::interop::StartupCoordinator takes the first kind,
-        // and unmasks the second when the intent call also goes unanswered.
+        // No answer covers a release too old to have the method, and a peer that has gone.
+        // StartupCoordinator treats the empty answer as a match. A peer that has really
+        // gone leaves the intent call unanswered too, which is where we find out.
         auto const dir = call<Glib::ustring>(tr::interop::MethodConfigDir, {});
         return dir ? std::string{ *dir } : std::string{};
     }
@@ -193,8 +193,8 @@ public:
 
 private:
     // Only a valid reply proves this endpoint implements the method.
-    // Identity and signature errors can come from an unrelated process
-    // that inherited a stale record's reused unique bus name.
+    // Identity and signature errors can come from an unrelated process that inherited
+    // a reused unique bus name from a stale record.
     template<typename T>
     [[nodiscard]] std::optional<T> call(std::string_view const method, Glib::VariantContainerBase const& params)
     {
@@ -216,8 +216,8 @@ DBusTransport::DBusTransport(std::string config_dir)
 
 DBusTransport::~DBusTransport()
 {
-    // Cleared first: an object still registered has no one to answer for,
-    // and answering is what it would otherwise do while the transport is being destroyed.
+    // Clear this first. A still-registered object would otherwise keep answering calls
+    // while we destroy the transport.
     published_ = nullptr;
 
     if (connection_ && registration_id_ != 0U)
@@ -236,8 +236,8 @@ void DBusTransport::on_method_call(
     Glib::VariantContainerBase const& parameters,
     Glib::RefPtr<Gio::DBus::MethodInvocation> const& invocation)
 {
-    // Dispatched on the main context that registered the object (the GTK mainloop)
-    // so the Instance may safely touch widgets.
+    // GDBus dispatches on the main context that registered the object, the GTK mainloop,
+    // so the Instance may touch widgets safely.
     auto const reply_bool = [&invocation](bool const value)
     {
         invocation->return_value(Glib::VariantContainerBase::create_tuple(Glib::Variant<bool>::create(value)));
@@ -282,8 +282,8 @@ void DBusTransport::publish(tr::interop::Instance& self)
         {
             try
             {
-                // register_object() takes its own reference on the interface info;
-                // only the vtable must outlive the registration.
+                // register_object() takes its own reference on the interface info.
+                // Only the vtable has to outlive the registration.
                 auto const node_info = Gio::DBus::NodeInfo::create_for_xml(to_ustring(tr::interop::DBusIntrospectionXml));
                 vtable_ = std::make_unique<Gio::DBus::InterfaceVTable>(sigc::mem_fun(*this, &DBusTransport::on_method_call));
                 registration_id_ = connection->register_object(ObjectPath, node_info->lookup_interface(), *vtable_);

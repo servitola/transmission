@@ -211,17 +211,19 @@ std::string native_path_to_path(std::wstring_view wide_path)
 {
     auto wide_path = path_to_fixed_native_path(path);
 
-    // path_to_fixed_native_path() squashes repeated separators, including the leading pair that makes a path UNC.
-    // Restore it: GetFullPathNameW() would otherwise resolve \\server\share against the current drive.
+    // path_to_fixed_native_path() squashes repeated separators, including the leading pair
+    // that makes a path UNC. Restore it, or GetFullPathNameW() resolves \\server\share
+    // against the current drive.
     if (is_unc_path(path))
     {
         wide_path.insert(0, 1, L'\\');
     }
 
-    // Past MAX_PATH, GetFullPathNameW() answers only for a path carrying the "\\?\" prefix --
-    // which is also what tells it to leave the path alone, so it cannot both reach that length and normalize.
-    // Such a path keeps the spelling it arrived with: it is already absolute, since nothing relative
-    // reaches that length, and tr_sys_path_resolve() canonicalizes from the open handle regardless.
+    // Past MAX_PATH, GetFullPathNameW() only answers for a path carrying the "\\?\" prefix,
+    // and that prefix also tells it not to normalize. Such a path therefore keeps the
+    // spelling it arrived with.
+    // That is safe. Nothing relative reaches that length, so the path is already absolute,
+    // and tr_sys_path_resolve() canonicalizes from the open handle anyway.
     auto const size = GetFullPathNameW(wide_path.c_str(), 0, nullptr, nullptr);
     if (size == 0)
     {

@@ -12,8 +12,8 @@
 #include <libtransmission-app/interop.h>
 
 // Exposes this process's Instance through QtDBus and ActiveQt.
-// Each slot only converts its arguments and forwards one call;
-// matching and launch policy belong to tr::interop.
+// Each slot converts its arguments and forwards one call.
+// Matching and launch policy belong to tr::interop.
 //
 // Incoming calls run on the GUI thread.
 // QtDBus uses the thread that registered the object,
@@ -24,8 +24,8 @@ class InteropObject : public QObject
     Q_OBJECT
 
 #ifdef ENABLE_DBUS_INTEROP
-    // This is the interface exported by this build.
-    // A peer record may direct callers to a different interface exported by another client.
+    // The interface this build exports.
+    // A peer record may point callers at a different interface exported by another client.
     Q_CLASSINFO("D-Bus Interface", TR_INTEROP_DBUS_INTERFACE_NAME)
 #endif
 
@@ -39,8 +39,8 @@ class InteropObject : public QObject
 #endif
 
 public:
-    // QAxFactory can pass only a parent when it constructs COM objects,
-    // so those objects answer for whatever publish_instance() has named.
+    // QAxFactory passes only a parent when it constructs COM objects,
+    // so those objects answer for whatever publish_instance() named.
     explicit InteropObject(QObject* parent = nullptr);
     explicit InteropObject(tr::interop::Instance& instance, QObject* parent = nullptr);
     ~InteropObject() override = default;

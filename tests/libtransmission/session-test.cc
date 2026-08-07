@@ -410,16 +410,15 @@ void snapshotDir(std::string const& dir, std::map<std::string, std::string>& out
 }
 } // namespace
 
-// The second session still starts; the lock is how it finds out the dir is not its own.
+// The second session still starts. It takes the lock to find out the dir is not its own.
 // `session_` already holds this dir.
 TEST_F(SessionTest, doesNotOwnAConfigDirAnotherSessionHolds)
 {
     EXPECT_TRUE(configDirIsContended(sandboxDir(), quietSettings()));
 }
 
-// Everything a session saves to the config dir -- settings, stats, resume data, the queue --
-// would clobber the owner's copy when the dir is another session's,
-// so a session that found the dir contended must not write there at all.
+// A session that found the config dir contended must not write there at all.
+// Its settings, stats, resume data and queue would all clobber the owner's copies.
 // `session_` already holds this dir.
 TEST_F(SessionTest, doesNotWriteToAConfigDirAnotherSessionHolds)
 {
@@ -470,8 +469,8 @@ TEST_F(SessionTest, claimsAConfigDirItHadToCreate)
 
 TEST_F(SessionTest, startsOnAConfigDirItCannotLock)
 {
-    // A lock that is a directory can never be opened as a file,
-    // which is the shape of every "could not be locked at all" a real filesystem produces.
+    // A lock that is a directory can never be opened as a file.
+    // Every real "could not be locked at all" behaves the same way.
     auto const dir = sandboxDir() + "/unlockable";
     ASSERT_TRUE(tr_sys_dir_create(dir, TR_SYS_DIR_CREATE_PARENTS, 0700));
     ASSERT_TRUE(tr_sys_dir_create(dir + "/lock", TR_SYS_DIR_CREATE_PARENTS, 0700));

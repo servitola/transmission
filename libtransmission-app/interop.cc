@@ -31,8 +31,8 @@ std::string canonical_config_dir(std::string_view const config_dir)
         return path;
     }
 
-    // Not created yet, so nothing to resolve;
-    // absolute is the best that can be promised.
+    // The dir does not exist yet, so there is nothing to resolve.
+    // Absolute is the best we can do.
     if (tr_sys_path_is_relative(config_dir))
     {
         return std::string{ tr_pathbuf{ tr_sys_dir_get_current(), '/', config_dir } };
@@ -72,7 +72,7 @@ namespace
 
 #ifdef _WIN32
     // `file:///C:/dir` leaves `/C:/dir` here. That first slash separates the URI's empty
-    // authority from its path; it is not part of the path, and CreateFileW rejects it.
+    // authority from its path. It is not part of the path, and CreateFileW rejects it.
     if (std::size(filename) > 2U && filename.front() == '/' && filename[2U] == ':')
     {
         filename.erase(0U, 1U);
@@ -100,8 +100,8 @@ std::optional<std::string> encode_metainfo_arg(std::string_view const arg)
 
 std::optional<std::string> decode_metainfo_torrent(std::string_view const metainfo)
 {
-    // Decoding alone proves nothing: base64's alphabet includes '/', so a path decodes to
-    // bytes as readily as a torrent does. Only parsing says which one arrived.
+    // Decoding alone proves nothing. base64's alphabet includes '/', so a path decodes to
+    // bytes as readily as a torrent does. Only parsing tells them apart.
     auto contents = tr_base64_decode(metainfo);
     if (std::empty(contents) || !tr_torrent_metainfo{}.parse_benc(contents))
     {

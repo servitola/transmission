@@ -640,10 +640,11 @@ public:
         return configDirLockStatus() == tr_config_dir_lock::Status::Contended;
     }
 
-    // Whether this session's state may be saved to the config dir.
-    // False when another session holds the dir: every file saved there would clobber the owner's.
-    // An unavailable lock does not forfeit saving --
-    // it names no owner to clobber, and persisting is still this session's job.
+    // Whether this session may save its state to the config dir.
+    // False when another session holds the dir: anything we wrote there would clobber
+    // the owner's files.
+    // True when we could not take the lock at all. That tells us nothing about who else
+    // is using the dir, so we go on saving.
     [[nodiscard]] constexpr bool mayWriteConfigDir() const noexcept
     {
         return !configDirIsContended();

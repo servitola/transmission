@@ -78,8 +78,9 @@ Glib::OptionEntry create_option_entry(Glib::ustring const& long_name, gchar shor
         }
         else
         {
-            // This launch is being handed over, so it never reaches the code that would
-            // otherwise report the argument. Silence here would read as "all of it landed".
+            // Report it here. This launch is being handed over, so it never reaches the code
+            // that would otherwise report it, and saying nothing would look like every
+            // argument landed.
             fmt::print(stderr, "Skipping '{}': not a torrent file, URL or magnet link.\n", arg);
         }
     }
@@ -130,9 +131,9 @@ int main(int argc, char** argv)
     Glib::OptionContext option_context(_("[torrent files or urls]"));
     option_context.set_main_group(main_group);
 #if !GTKMM_CHECK_VERSION(4, 0, 0)
-    // Recognize GTK's own options without opening the display to do it:
-    // a launch that only hands its torrents to a running instance never needs a display of its own,
-    // and asking for one fails the whole launch where there is none to give.
+    // Recognize GTK's own options without opening the display.
+    // A launch that only hands its torrents to a running instance needs no display,
+    // and asking for one where there is none fails the whole launch.
     Gtk::Main::add_gtk_option_group(option_context, false);
 #endif
     option_context.set_translation_domain(GETTEXT_PACKAGE);
@@ -177,16 +178,16 @@ int main(int argc, char** argv)
     gtr_pref_init(config_dir);
 
     // Try to hand this launch to an instance already running on this config dir before starting ourselves.
-    // GApplication would forward the arguments for us if this were a unique application,
-    // but its bus name can only ever reach a client of this toolkit;
-    // this reaches whoever serves the config dir.
+    // GApplication would forward the arguments if this were a unique application,
+    // but its bus name reaches only clients built on this toolkit.
+    // This reaches whoever serves the config dir.
     auto startup_coordinator = std::make_unique<tr::interop::StartupCoordinator>(
         config_dir,
         tr::interop::make_transport(config_dir));
-    // Intent comes from the raw argument list, as in the Qt client:
-    // a launch whose torrent arguments were all unreadable must fall through and show its errors,
-    // not present someone else's window.
-    // A launch asked to start iconified is not asking for a window to be raised, so it hands nothing over.
+    // Intent comes from the raw argument list, as in the Qt client.
+    // A launch whose torrent arguments were all unreadable must fall through and show its
+    // errors, not present someone else's window.
+    // A launch asked to start iconified does not want a window raised, so it hands nothing over.
     auto const intent = intent_of(start_iconified, argc > 1);
 
     if (auto const exit_code = startup_coordinator->delegate(

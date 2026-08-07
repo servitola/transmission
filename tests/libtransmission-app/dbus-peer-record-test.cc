@@ -73,9 +73,9 @@ TEST_F(DBusPeerRecordTest, readsNothingFromARecordItCannotUnderstand)
     }
 }
 
-// A record comes from another client, so it is bound by no grammar until this reads it.
-// GDBus refuses a name outside the grammar by answering nothing at all rather than by reporting an error,
-// so a name that gets past here reaches a call whose reply cannot be told apart from an absent peer's.
+// A record comes from another client, so nothing constrains it until this reads it.
+// GDBus refuses a name outside the grammar by answering nothing rather than reporting an error,
+// so a bad name that gets past here looks exactly like a peer that is not there.
 TEST_F(DBusPeerRecordTest, readsNothingFromANameDBusWouldReject)
 {
     static auto constexpr Rejected = std::array{
@@ -157,7 +157,7 @@ namespace
 
 auto constexpr Self = ":1.7"sv;
 
-// Stands in for the bus: names it was told are owned answer with an owner, the rest with nothing.
+// Stands in for the bus: a name it was told is owned answers with an owner, every other name with nothing.
 class Bus
 {
 public:
@@ -244,8 +244,8 @@ TEST_F(DBusPeerRecordTest, findsNobodyOnAnEmptyBus)
     EXPECT_FALSE(interop::select_dbus_peer(sandboxDir(), Self, bus.owner_lookup()).has_value());
 }
 
-// The record names an interface and path rather than assuming them,
-// which is what lets a client built from other sources be handed a torrent.
+// The record names an interface and path rather than assuming them.
+// That is how a client built from other sources can be handed a torrent.
 TEST_F(DBusPeerRecordTest, callsAPeerAtTheNamesItRecorded)
 {
     write_raw(sandboxDir(), "bus-name=:1.9\ninterface=org.example.Client\npath=/org/example/Client\n"sv);

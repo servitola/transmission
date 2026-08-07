@@ -92,8 +92,8 @@ int AddData::set(QString const& key)
 
 std::optional<AddData> AddData::fromWireMetainfo(std::string_view const metainfo)
 {
-    // is_metainfo_link() is what the sending end classified with,
-    // so the same argument cannot be one thing there and another here.
+    // The sending end classified with is_metainfo_link() too,
+    // so the same argument cannot be a link there and a torrent here.
     if (tr::interop::is_metainfo_link(metainfo))
     {
         return create(Utils::toQString(metainfo));

@@ -33,10 +33,10 @@ struct DBusPeerRecord
     std::string path;
 };
 
-// The file format itself. A client calls select_dbus_peer() and publish_dbus_peer()
-// below rather than these; these are declared here so that the grammar a record has to
-// satisfy can be tested directly, which reaching it through the two above cannot do --
-// they answer "nobody to call" for a malformed record and for a departed one alike.
+// The file format itself. Clients call select_dbus_peer() and publish_dbus_peer() below
+// instead. These are declared so that tests can check the record grammar directly.
+// The two functions below cannot: they answer "nobody to call" for a malformed record
+// and for a departed one alike.
 
 // Returns nullopt if the record is missing, unreadable, or ill-formed.
 [[nodiscard]] std::optional<DBusPeerRecord> read_dbus_peer_record(std::string_view config_dir);
@@ -50,7 +50,7 @@ bool write_dbus_peer_record(std::string_view config_dir, DBusPeerRecord const& r
 // Supplied by the transport, since only it speaks to the bus.
 using DBusNameOwner = std::function<std::string(std::string_view name)>;
 
-// Get the contact information for the client running in `config_dir`.
+// The contact information for the client running in `config_dir`,
 // or nullopt when no other client is there.
 //
 // `self` is this connection's unique name, so a client never selects itself.
@@ -68,10 +68,10 @@ using DBusNameOwner = std::function<std::string(std::string_view name)>;
 //  2. the well-known name, which is how a caller with no record to read reaches this client;
 //  3. the record, which points a later launch on this config dir at this client and no other.
 //
-// A false from `register_object` skips steps 2 and 3: a name that resolves to a client with
+// A false from `register_object` skips steps 2 and 3. A name that resolves to a client with
 // no object is worse than no name at all.
-// A false from `claim_well_known_name` is not a failure -- another session already owns that
-// name and its client answers there, and this client is still reachable through its record.
+// A false from `claim_well_known_name` is not a failure. Another session already owns that
+// name and answers there, and callers still reach this client through its record.
 void publish_dbus_peer(
     std::string_view config_dir,
     std::string_view unique_name,

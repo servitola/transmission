@@ -13,9 +13,9 @@ using namespace std::literals;
 
 namespace
 {
-// Interop contract, shared with separately-built clients: two products that spell this
-// differently each hold a lock the other never looks at, and both start on one config dir.
-// `libtransmission-app/interop-names.h` inventories every such name.
+// Interop contract, shared with separately-built clients. Two products that spell this
+// differently each hold a lock the other never looks at, so both start on one config dir.
+// `libtransmission-app/interop-names.h` inventories every shared name.
 auto constexpr LockFilename = "lock"sv;
 } // namespace
 
@@ -27,7 +27,7 @@ tr_config_dir_lock::tr_config_dir_lock(std::string_view const config_dir)
 
 bool tr_configDirIsContended(std::string_view const config_dir)
 {
-    // Taking the lock is how the question is asked, so this holds it for the length
-    // of the call. Releasing it again is what makes the answer a snapshot.
+    // We can only ask by taking the lock, so we hold it for the length of this call and
+    // release it on return. The answer describes that instant and nothing after it.
     return tr_config_dir_lock{ config_dir }.status() == tr_config_dir_lock::Status::Contended;
 }

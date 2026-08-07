@@ -40,15 +40,15 @@ enum class StartupDecision : uint8_t
 {
     auto const theirs = other.config_dir();
 
-    // Cannot say: a release without the method.
-    // startup-coordinator.h's contract says take it.
+    // An empty answer means a release too old to have ConfigDir().
+    // Take it rather than start a second instance.
     if (std::empty(theirs))
     {
         return true;
     }
 
-    // Filesystem identity first: when both dirs exist it sees through bind mounts and hard links,
-    // not just the symlinks a resolved compare covers.
+    // Check filesystem identity first. When both dirs exist, this sees through bind mounts
+    // and hard links, which comparing resolved paths does not.
     if (tr_sys_path_is_same(theirs.c_str(), std::string{ config_dir }.c_str()))
     {
         return true;
@@ -58,7 +58,6 @@ enum class StartupDecision : uint8_t
 }
 
 // One attempt to hand this launch over. Start means nobody took it.
-// StartupCoordinator states the policy this carries out.
 [[nodiscard]] StartupDecision try_delegate(
     Transport& transport,
     std::string_view const config_dir,
@@ -78,16 +77,16 @@ enum class StartupDecision : uint8_t
 
     tr_logAddDebug(fmt::format("handing this launch to {:s}", other->description()));
 
-    // An answer -- yes or no -- takes the launch; only silence leaves it here.
-    // The contract in startup-coordinator.h says why.
+    // Any answer takes the launch, yes or no. An instance that answers has handled the
+    // request either way. Only silence leaves the launch with us.
     switch (intent)
     {
     case Intent::AddTorrents:
         {
             auto decision = StartupDecision::Start;
 
-            // Read here and not before: the arguments are worth encoding only now that
-            // an instance is known to be both there and serving this config dir.
+            // Read the torrents here, not earlier.
+            // Only now do we know an instance is there and serving this config dir.
             auto const encoded = metainfos ? metainfos() : std::vector<std::string>{};
 
             for (auto const& metainfo : encoded)
@@ -95,13 +94,13 @@ enum class StartupDecision : uint8_t
                 auto const answer = other->add_metainfo(metainfo);
                 if (!answer)
                 {
-                    // Gone mid-handoff.
-                    // Offering the remaining files would only wait on a process that is no longer there.
+                    // The instance went away mid-handoff.
+                    // Offering it the remaining files would only wait on a process that has gone.
                     break;
                 }
 
-                // One refusal decides the launch: it went nowhere for a file the user named,
-                // and saying so matters more than the ones that landed.
+                // One refusal decides the launch. A file the user named went nowhere,
+                // and that is worth reporting even when the others landed.
                 if (!*answer)
                 {
                     decision = StartupDecision::Refused;
@@ -175,7 +174,7 @@ public:
         TR_ASSERT(transport_ != nullptr);
 
         // A dir must exist before a file in it can be locked,
-        // so a launch on a brand-new config dir claims it too.
+        // so create it here rather than leave it to the session.
         tr_sys_dir_create(config_dir_, TR_SYS_DIR_CREATE_PARENTS, 0755);
         (void)lock_.try_acquire();
     }
@@ -208,8 +207,8 @@ public:
             return StartupDecision::Start;
         }
 
-        // Another launch is between delegation and publication;
-        // wait for it to publish -- release follows publication -- or to give up and exit.
+        // Another launch is between delegation and publication. It releases this lock just
+        // after it publishes, so wait for that, or for it to give up and exit.
         auto const deadline = std::chrono::steady_clock::now() + patience;
         while (!lock_.try_acquire())
         {
@@ -221,8 +220,8 @@ public:
             std::this_thread::sleep_for(50ms);
         }
 
-        // Whoever released the guard published first; give that peer one final
-        // chance before starting.
+        // Whoever released the lock published first,
+        // so give that peer one last chance before starting.
         return delegate();
     }
 

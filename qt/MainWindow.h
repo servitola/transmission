@@ -62,7 +62,6 @@ public:
     }
 
     // Bring the window up from wherever it is: hidden to the tray, minimized, or behind another.
-    // What a launch handed to this instance owes the user who made it.
     void presentWindow();
 
 public slots:
