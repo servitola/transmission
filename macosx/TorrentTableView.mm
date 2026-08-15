@@ -19,6 +19,8 @@
 #import "TorrentCellActionButton.h"
 #import "TorrentCellControlButton.h"
 #import "TorrentCellRevealButton.h"
+#import "LiquidGlass.h"
+#import "LiquidGlassRowView.h"
 
 CGFloat const kGroupSeparatorHeight = 18.0;
 
@@ -194,6 +196,11 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
     return ![self.fDefaults boolForKey:@"SmallView"];
 }
 
+- (void)outlineView:(NSOutlineView*)outlineView didAddRowView:(NSTableRowView*)rowView forRow:(NSInteger)row
+{
+    [LiquidGlass applyToRowView:rowView];
+}
+
 - (BOOL)isGroupCollapsed:(NSInteger)value
 {
     if (value == -1)
@@ -235,6 +242,19 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
 - (CGFloat)outlineView:(NSOutlineView*)outlineView heightOfRowByItem:(id)item
 {
     return [item isKindOfClass:[Torrent class]] ? self.rowHeight : kGroupSeparatorHeight;
+}
+
+- (NSTableRowView*)outlineView:(NSOutlineView*)outlineView rowViewForItem:(id)item
+{
+    static NSString* const kRowViewIdentifier = @"LiquidGlassRowView";
+
+    LiquidGlassRowView* rowView = [outlineView makeViewWithIdentifier:kRowViewIdentifier owner:self];
+    if (rowView == nil)
+    {
+        rowView = [[LiquidGlassRowView alloc] initWithFrame:NSZeroRect];
+        rowView.identifier = kRowViewIdentifier;
+    }
+    return rowView;
 }
 
 - (NSView*)outlineView:(NSOutlineView*)outlineView viewForTableColumn:(NSTableColumn*)tableColumn item:(id)item
@@ -325,6 +345,14 @@ static NSTimeInterval const kToggleProgressSeconds = 0.175;
         }
 
         torrentCell.fTorrentTableView = self;
+
+        [LiquidGlass increaseFontSizeBy:2.0 forTextField:torrentCell.fTorrentTitleField];
+        [LiquidGlass increaseFontSizeBy:2.0 forTextField:torrentCell.fTorrentStatusField];
+        [LiquidGlass increaseFontSizeBy:2.0 forTextField:torrentCell.fTorrentProgressField];
+
+        [LiquidGlass improveLegibilityForTextField:torrentCell.fTorrentTitleField];
+        [LiquidGlass improveLegibilityForTextField:torrentCell.fTorrentStatusField];
+        [LiquidGlass improveLegibilityForTextField:torrentCell.fTorrentProgressField];
 
         // set this so that we can draw bar in torrentCell drawRect
         torrentCell.objectValue = torrent;
