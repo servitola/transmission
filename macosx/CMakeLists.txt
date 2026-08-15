@@ -122,6 +122,10 @@ target_sources(${TR_NAME}-mac
         InfoViewController.h
         InfoWindowController.h
         InfoWindowController.mm
+        LiquidGlass.h
+        LiquidGlass.mm
+        LiquidGlassRowView.h
+        LiquidGlassRowView.mm
         main.mm
         MessageWindowController.h
         MessageWindowController.mm
