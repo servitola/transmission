@@ -50,6 +50,7 @@
 #import "BlocklistDownloader.h"
 #import "StatusBarController.h"
 #import "FilterBarController.h"
+#import "LiquidGlass.h"
 #import "FileRenameSheetController.h"
 #import "BonjourController.h"
 #import "Badger.h"
@@ -115,7 +116,7 @@ typedef NS_ENUM(NSUInteger, SortOrderTag) { //
 
 static NSString* const kTorrentTableViewDataType = @"TorrentTableViewDataType";
 
-static CGFloat const kRowHeightRegular = 62.0;
+static CGFloat const kRowHeightRegular = 70.0; // +8 to fit LiquidGlass's +2pt card label font increase
 static CGFloat const kRowHeightSmall = 22.0;
 
 static CGFloat const kStatusBarHeight = 24.0;
@@ -813,6 +814,8 @@ static void removeKeRangerRansomware()
     [nc addObserver:self selector:@selector(updateWindowAfterToolbarChange) name:@"ToolbarDidChange" object:nil];
 
     [self updateMainWindow];
+
+    [LiquidGlass applyToWindowBackground:self.fWindow scrollView:self.fTableView.enclosingScrollView];
 
     //timer to update the interface every second
     __weak __auto_type weakSelf = self;
@@ -5128,6 +5131,7 @@ static void removeKeRangerRansomware()
         self.fStatusBar.layoutAttribute = NSLayoutAttributeBottom;
         self.fStatusBar.automaticallyAdjustsSize = NO;
 
+        [LiquidGlass applyToAccessoryViewController:self.fStatusBar];
         [self.fWindow addTitlebarAccessoryViewController:self.fStatusBar];
     }
 
@@ -5146,6 +5150,7 @@ static void removeKeRangerRansomware()
         self.fFilterBar.layoutAttribute = NSLayoutAttributeBottom;
         self.fFilterBar.automaticallyAdjustsSize = NO;
 
+        [LiquidGlass applyToAccessoryViewController:self.fFilterBar];
         [self.fWindow addTitlebarAccessoryViewController:self.fFilterBar];
     }
 
