@@ -81,14 +81,15 @@
 	<string>NSApplication</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
 	<true/>
+	<!-- This fork ships no appcast on purpose: Sparkle must never replace a Liquid Glass
+	     build with an official one. SUFeedURL is removed rather than merely disabled,
+	     because SUEnableAutomaticChecks is a user-defaults-backed preference (bound to a
+	     checkbox in PrefsWindow.xib) that one click overrides; with no feed there is
+	     nothing to check against. SUPublicEDKey/SUScheduledCheckInterval go with it. -->
 	<key>SUAllowsAutomaticUpdates</key>
 	<false/>
-	<key>SUFeedURL</key>
-	<string>https://update.transmissionbt.com/appcast.xml</string>
-	<key>SUPublicEDKey</key>
-	<string>7z50Cf3+j+rhWuwFKn6C5T+SEeZoqoQ3E02Xkj+cyN8=</string>
-	<key>SUScheduledCheckInterval</key>
-	<string>86400</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
